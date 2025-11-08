@@ -1,12 +1,11 @@
 import os
-
 import streamlit as st
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
 from langchain_groq import ChatGroq
 
-# --- Set your Groq API key ---
+# --- Load Groq API key ---
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
 # --- Initialize LLM ---
@@ -33,20 +32,18 @@ menu_chain = RunnableSequence(prompt_menu | llm | StrOutputParser())
 st.title("🍝 AI Restaurant Generator")
 st.write("Generate a restaurant name, tagline, and menu using Groq’s Llama 3 model.")
 
-# --- Sidebar inputs ---
+# --- Sidebar Inputs ---
 cuisine = st.sidebar.selectbox(
     "Select a cuisine:",
-    [
-        "None","Italian", "Indian", "Japanese", "Chinese", "Mexican", "French",
+    ["None", "Italian", "Indian", "Japanese", "Chinese", "Mexican", "French",
         "Mediterranean", "Korean", "American", "Angolan", "Cameroonian",
         "Chadian", "Congolese", "Central African", "Equatorial Guinean",
-        "Gabonese", "Santomean", "Arabic"
-    ]
+        "Gabonese", "Santomean", "Arabic"]
 )
 
 meal_type = st.sidebar.selectbox(
     "Select meal type:",
-    ["None","Appetizer","breakfast", "lunch", "dinner"]
+    ["None", "Appetizer", "breakfast", "lunch", "dinner"]
 )
 
 dietary = st.sidebar.selectbox(
