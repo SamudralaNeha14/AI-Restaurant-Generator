@@ -1,31 +1,72 @@
+# -----------------------------
+# Set background image
+# -----------------------------
+import base64
 import os
+
 import streamlit as st
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
 from langchain_groq import ChatGroq
 
-# -----------------------------
-# Set background image
-# -----------------------------
-def set_background(image_file):
+
+def set_background_with_overlay(image_file, overlay_opacity=0.3):
+    # Read and encode image
+    import base64
+    with open(image_file, "rb") as f:
+        data = f.read()
+    encoded = base64.b64encode(data).decode()
+
+    # CSS with overlay
     st.markdown(
         f"""
         <style>
         [data-testid="stAppViewContainer"] {{
-            background-image: url("{image_file}");
+            background-image: url("data:image/jpg;base64,{encoded}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
+            position: relative;
+        }}
+        /* Add overlay */
+        [data-testid="stAppViewContainer"]::before {{
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, {overlay_opacity}); /* Adjust opacity here */
+            z-index: -1;
         }}
         </style>
         """,
         unsafe_allow_html=True
     )
+# Example: overlay with 30% darkness
+set_background_with_overlay("images/img.jpg", overlay_opacity=0.3)
 
-# Path to your image
-set_background("images/img.jpg")  # Ensure this path exists in your repo
+st.markdown(
+    """
+    <style>
+    /* Sidebar background */
+    [data-testid="stSidebar"] {
+        background-color: rgba(25, 55, 20, 0.3);
+        padding: 10px;
+        border-radius: 10px;
+    }
+
+    /* Optional: Sidebar text color */
+    [data-testid="stSidebar"] * {
+        color: #ffffff;
+    }
+    /* Sidebar labels/text */
+    div[data-testid="stSidebar"] label {
+        font-size: 50px;
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # -----------------------------
 # Load Groq API key
