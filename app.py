@@ -1,6 +1,3 @@
-# -----------------------------
-# Set background image
-# -----------------------------
 import base64
 import os
 
@@ -11,80 +8,75 @@ from langchain_core.runnables import RunnableSequence
 from langchain_groq import ChatGroq
 
 
-def set_background_with_overlay(image_file, overlay_opacity=0.3):
-    # Read and encode image
-    import base64
-    with open(image_file, "rb") as f:
-        data = f.read()
-    encoded = base64.b64encode(data).decode()
+# --- Function to add background image with overlay ---
+def add_bg_with_overlay(image_file, overlay_color="rgba(0,0,0,0.5)"):
+    """Adds a background image with a semi-transparent overlay."""
+    with open(image_file, "rb") as file:
+        encoded = base64.b64encode(file.read()).decode()
 
-    # CSS with overlay
     st.markdown(
         f"""
         <style>
-        [data-testid="stAppViewContainer"] {{
-            background-image: url("data:image/jpg;base64,{encoded}");
+        /* --- Main App Background with Overlay --- */
+        .stApp {{
+            position: relative;
+            background: url("data:image/jpg;base64,{encoded}");
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
             background-attachment: fixed;
-            position: relative;
+            overflow: hidden;
         }}
-        /* Add overlay */
-        [data-testid="stAppViewContainer"]::before {{
+
+        .stApp::before {{
             content: "";
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, {overlay_opacity}); /* Adjust opacity here */
-            z-index: -1;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: {overlay_color};
+            z-index: 0;
+        }}
+
+        /* --- Make all Streamlit content appear above the overlay --- */
+        .stApp > * {{
+            position: relative;
+            z-index: 1;
+        }}
+
+        /* --- Sidebar Styling --- */
+        [data-testid="stSidebar"] {{
+            background-color: rgba(20, 25, 50, 0.6);
+            color: white !important;
+        }}
+
+        [data-testid="stSidebar"] * {{
+            font-size: 20px !important;
+            color: white !important;
+        }}
+
+        /* --- Text and Title Styling --- */
+        .stMarkdown, .stTitle, .stHeader, .stText {{
+            color: white !important;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
         }}
         </style>
         """,
         unsafe_allow_html=True
     )
-# Example: overlay with 30% darkness
-set_background_with_overlay("images/img.jpg", overlay_opacity=0.3)
-
-st.markdown(
-    """
-    <style>
-    /* Sidebar background */
-    [data-testid="stSidebar"] {
-        background-color: rgba(25, 55, 20, 0.3);
-        padding: 10px;
-        border-radius: 10px;
-    }
-
-    /* Optional: Sidebar text color */
-    [data-testid="stSidebar"] * {
-        color: #ffffff;
-    }
-    /* Sidebar labels/text */
-    div[data-testid="stSidebar"] label {
-        font-size: 50px;
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 
-# -----------------------------
-# Load Groq API key
-# -----------------------------
-try:
-    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
-except KeyError:
-    st.error("GROQ_API_KEY not found in Streamlit Secrets. Add it to deploy your app.")
-    st.stop()
+# --- Apply background ---
+add_bg_with_overlay("images/img.jpg", overlay_color="rgba(0,0,0,0.5)")
 
-# -----------------------------
-# Initialize LLM
-# -----------------------------
+
+# --- Load Groq API key ---
+os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
+# --- Initialize LLM ---
 llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.7)
 
-# -----------------------------
-# Define Prompt Templates
-# -----------------------------
+# --- Define Prompt Templates ---
 prompt_name = PromptTemplate.from_template("Suggest a fancy {cuisine} restaurant name.")
 prompt_tagline = PromptTemplate.from_template(
     "Write a catchy tagline for a restaurant called '{restaurant_name}'."
@@ -96,31 +88,29 @@ prompt_menu = PromptTemplate.from_template(
     "with short, appealing descriptions."
 )
 
-# -----------------------------
-# Define Chains
-# -----------------------------
+# --- Define Chains ---
 name_chain = RunnableSequence(prompt_name | llm | StrOutputParser())
 tagline_chain = RunnableSequence(prompt_tagline | llm | StrOutputParser())
 menu_chain = RunnableSequence(prompt_menu | llm | StrOutputParser())
 
-# -----------------------------
-# Streamlit UI
-# -----------------------------
+# --- Streamlit UI ---
 st.title("🍝 AI Restaurant Generator")
 st.write("Generate a restaurant name, tagline, and menu using Groq’s Llama 3 model.")
 
 # --- Sidebar Inputs ---
 cuisine = st.sidebar.selectbox(
     "Select a cuisine:",
-    ["None", "Italian", "Indian", "Japanese", "Chinese", "Mexican", "French",
-     "Mediterranean", "Korean", "American", "Angolan", "Cameroonian",
-     "Chadian", "Congolese", "Central African", "Equatorial Guinean",
-     "Gabonese", "Santomean", "Arabic"]
+    [
+        "None", "Italian", "Indian", "Japanese", "Chinese", "Mexican", "French",
+        "Mediterranean", "Korean", "American", "Angolan", "Cameroonian",
+        "Chadian", "Congolese", "Central African", "Equatorial Guinean",
+        "Gabonese", "Santomean", "Arabic"
+    ]
 )
 
 meal_type = st.sidebar.selectbox(
     "Select meal type:",
-    ["None", "Appetizer", "breakfast", "lunch", "dinner"]
+    ["None", "Appetizer", "Breakfast", "Lunch", "Dinner"]
 )
 
 dietary = st.sidebar.selectbox(
@@ -130,8 +120,8 @@ dietary = st.sidebar.selectbox(
 
 # --- Generate Restaurant ---
 if st.button("Generate Restaurant"):
-    if not cuisine or cuisine == "None" or not meal_type or meal_type == "None":
-        st.warning("Please select a cuisine and a meal type.")
+    if cuisine == "None":
+        st.warning("Please select a cuisine.")
     else:
         with st.spinner("Cooking up your restaurant idea... 🍳"):
             restaurant_name = name_chain.invoke({"cuisine": cuisine})
@@ -144,10 +134,10 @@ if st.button("Generate Restaurant"):
             })
 
         st.subheader("🍽️ Restaurant Name")
-        st.markdown(restaurant_name)
+        st.markdown(f"### {restaurant_name}")
 
         st.subheader("💬 Tagline")
-        st.markdown(tagline)
+        st.markdown(f"**{tagline}**")
 
         st.subheader("📜 Menu")
         st.markdown(menu)
